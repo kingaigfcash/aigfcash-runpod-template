@@ -229,6 +229,66 @@ PY
   fi
 }
 
+update_comfy() {
+  # Auto-update ComfyUI core and ComfyUI-Manager if allowed
+  if [[ ${AUTO_UPDATE,,} == "false" ]]; then
+    log "AUTO_UPDATE=false: skipping ComfyUI auto-update"
+    return 0
+  fi
+
+  # Update ComfyUI core
+  if [[ -d "${COMFY_DIR}/.git" ]]; then
+    (
+      cd "${COMFY_DIR}"
+      git fetch --tags --prune || true
+      # If on a branch, we can safely pull; if detached and COMFYUI_REF is pinned, skip
+      if git rev-parse --abbrev-ref HEAD | grep -q '^HEAD$'; then
+        if [[ "${COMFYUI_REF}" != "latest" ]]; then
+          log "ComfyUI is pinned to ${COMFYUI_REF}; skipping core auto-update"
+        else
+          git pull --rebase --autostash || true
+        fi
+      else
+        git pull --rebase --autostash || true
+      fi
+    )
+    # Reinstall requirements after potential update
+    if [[ -f "${COMFY_DIR}/requirements.txt" ]]; then
+      log "Reinstalling ComfyUI requirements after update..."
+      pipx install --no-cache-dir -r "${COMFY_DIR}/requirements.txt" || warn "ComfyUI requirements install failed"
+    fi
+  fi
+
+  # Update ComfyUI-Manager if present
+  local mgr="${COMFY_DIR}/custom_nodes/ComfyUI-Manager"
+  if [[ -d "$mgr/.git" ]]; then
+    (
+      cd "$mgr"
+      git fetch --all --prune || true
+      git pull --rebase --autostash || true
+    )
+    if [[ -f "$mgr/requirements.txt" ]]; then
+      log "Installing ComfyUI-Manager requirements..."
+      pipx install --no-cache-dir -r "$mgr/requirements.txt" || warn "Manager requirements install failed"
+    fi
+  fi
+}
+
+install_pytorch() {
+  log "Installing PyTorch based on GPU..."
+  GPU_NAME=$(nvidia-smi --query-gpu=name --format=csv,noheader | head -n1 || echo "Unknown")
+  if [[ "$GPU_NAME" == *"5090"* || "$GPU_NAME" == *"B200"* || "$GPU_NAME" == *"H200"* ]]; then
+    echo "[INFO] Detected next-gen GPU ($GPU_NAME), installing PyTorch nightly (CUDA 12.5+)..."
+    pipx install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu125
+  else
+    echo "[INFO] Installing stable PyTorch 2.4.1 (CUDA 12.1) for $GPU_NAME..."
+    pipx install torch==2.4.1+cu121 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+  fi
+  pip install -U triton sageattention
+  pip uninstall -y xformers || true
+  pipx uninstall xformers || true
+}
+
 install_nodes() {
   log "Installing custom nodes..."
   local base="${COMFY_DIR}/custom_nodes"
@@ -334,6 +394,7 @@ main() {
   install_apt
   clone_comfyui
   install_python_base
+  update_comfy
   install_nodes
   install_workflows
   write_default_graph
