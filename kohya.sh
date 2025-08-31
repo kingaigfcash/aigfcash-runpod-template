@@ -23,7 +23,6 @@ PIP_PACKAGES=(
     "torch==2.1.2"
     "torchvision==0.16.2"
     "torchaudio==2.1.2"
-    "xformers==0.0.23.post1"
     "accelerate==0.25.0"
     "transformers==4.36.2"
     "diffusers==0.25.1"
@@ -244,7 +243,7 @@ create_config_file() {
   "wandb_api_key": "",
   "wandb_run_name": "",
   "weighted_captions": false,
-  "xformers": "xformers"
+  "xformers": ""
 }
 EOF
 }

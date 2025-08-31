@@ -284,7 +284,7 @@ install_pytorch() {
     echo "[INFO] Installing stable PyTorch 2.4.1 (CUDA 12.1) for $GPU_NAME..."
     pipx install torch==2.4.1+cu121 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
   fi
-  pip install -U triton sageattention
+  pipx install --no-cache-dir -U triton sageattention
   pip uninstall -y xformers || true
   pipx uninstall xformers || true
 }
@@ -394,8 +394,12 @@ main() {
   install_apt
   clone_comfyui
   install_python_base
+  install_pytorch
   update_comfy
   install_nodes
+  # Final safeguard: ensure xformers is not installed if a node pulled it in
+  pip uninstall -y xformers || true
+  pipx uninstall -y xformers || true
   install_workflows
   write_default_graph
   make_model_dirs

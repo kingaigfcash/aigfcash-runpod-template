@@ -39,7 +39,6 @@ PIP_PACKAGES=(
     "psutil"
     "kornia>=0.7.1"
     "diffusers"
-    "xformers"
     "comfyui-frontend-package==1.14.5"
 )
 
