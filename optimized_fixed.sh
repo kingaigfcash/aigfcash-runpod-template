@@ -425,10 +425,6 @@ main() {
   # Final safeguard: ensure xformers is not installed if a node pulled it in
   pip uninstall -y xformers || true
   pipx uninstall -y xformers || true
-  # Clean reinstall torch/torchaudio (and torchvision) to ensure correct versions after node installs
-  pipx uninstall -y torch torchaudio torchvision || true
-  pip uninstall -y torch torchaudio torchvision || true
-  pip install torch torchaudio
   install_pytorch
   install_workflows
   write_default_graph
