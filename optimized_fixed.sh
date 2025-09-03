@@ -80,6 +80,10 @@ NODES=(
   https://github.com/WASasquatch/was-node-suite-comfyui
   https://github.com/PGCRT/CRT-Nodes
   https://github.com/crystian/ComfyUI-Crystools
+  https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet
+  https://github.com/AgencyMind/ComfyUI-GPU-Preprocessor-Wrapper
+  https://github.com/ShmuelRonen/ComfyUI-Apply_Style_Model_Adjust
+  https://github.com/ComfyAssets/ComfyUI_Selectors
 )
 
 CHECKPOINT_MODELS=(
@@ -208,6 +212,9 @@ install_python_base() {
   # Prefer contrib build for OpenCV features some nodes require
   pipx uninstall -y opencv-python opencv-python-headless >/dev/null 2>&1 || true
   pipx install --no-cache-dir "opencv-contrib-python-headless==4.10.0.84"
+  
+  # Install deepdiff for ComfyUI-Manager
+  pipx install --no-cache-dir deepdiff || warn "deepdiff install failed"
 
   # Pre-pin torchvision/torchaudio to match torch in the image
   if pyx -c 'import torch; print(torch.__version__)' >/dev/null 2>&1; then
