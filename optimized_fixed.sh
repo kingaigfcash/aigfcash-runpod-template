@@ -11,8 +11,8 @@ trap 'code=$?; echo -e "\e[1;31m[ERROR]\e[0m ${BASH_SOURCE[0]}:${LINENO} exit $c
 # ---------------------------
 
 # ======== Tunables ========
-: "${COMFYUI_REF:=v0.3.50}"     # tag/branch/commit OR "latest"
-: "${AUTO_UPDATE:=true}"        # AI-Dock also has its own AUTO_UPDATE; this script is idempotent either way
+: "${COMFYUI_REF:=v0.3.50}"      # tag/branch/commit OR "latest"
+: "${AUTO_UPDATE:=true}"       # AI-Dock also has its own AUTO_UPDATE; this script is idempotent either way
 : "${WORKSPACE:=/workspace}"
 : "${COMFY_DIR:=${WORKSPACE%/}/ComfyUI}"
 : "${HF_TOKEN:=}"
@@ -114,9 +114,9 @@ SAM_MODELS=( https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pt
 
 WORKFLOWS=( https://github.com/kingaigfcash/aigfcash-runpod-template.git )
 
-log()  { printf "\e[1;32m[SETUP]\e[0m %s\n" "$*"; }
+log()   { printf "\e[1;32m[SETUP]\e[0m %s\n" "$*"; }
 warn() { printf "\e[1;33m[WARN ]\e[0m %s\n" "$*"; }
-err()  { printf "\e[1;31m[ERROR]\e[0m %s\n" "$*"; }
+err()   { printf "\e[1;31m[ERROR]\e[0m %s\n" "$*"; }
 
 sudo_if() { if command -v sudo >/dev/null 2>&1; then sudo "$@"; else "$@"; fi; }
 
@@ -147,7 +147,7 @@ fetch() {
   shift 2 || true
   local auth=()
   [[ "$url" =~ ^https://huggingface\.co ]] && [[ -n "${HF_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${HF_TOKEN}")
-  [[ "$url" =~ ^https://civitai\.com ]]    && [[ -n "${CIVITAI_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${CIVITAI_TOKEN}")
+  [[ "$url" =~ ^https://civitai\.com ]]      && [[ -n "${CIVITAI_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${CIVITAI_TOKEN}")
   mkdir -p "$(dirname "$out")"
   for i in 1 2 3; do
     curl -fL --retry 5 --retry-delay 2 "${auth[@]}" -o "$out.partial" "$url" && mv -f "$out.partial" "$out" || true
@@ -281,8 +281,8 @@ install_pytorch() {
     echo "[INFO] Detected next-gen GPU ($GPU_NAME), installing PyTorch nightly (CUDA 12.5+)..."
     pipx install --pre torch torchvision torchaudio --index-url https://download.pytorch.org/whl/nightly/cu125
   else
-    echo "[INFO] Installing stable PyTorch 2.4.1 (CUDA 12.1) for $GPU_NAME..."
-    pipx install torch==2.4.1+cu121 torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+    echo "[INFO] Installing stable PyTorch 2.5.0 (CUDA 12.8) for $GPU_NAME..."
+    pipx install torch==2.5.0+cu128 torchvision==0.20.0+cu128 torchaudio==2.5.0+cu128 --index-url https://download.pytorch.org/whl/cu128
   fi
   pipx install --no-cache-dir -U triton sageattention
   pip uninstall -y xformers || true
@@ -381,11 +381,11 @@ post_checks() {
   log "Quick sanity checks..."
   pyx - <<'PY' || true
 try:
-    import comfy
-    import comfy_extras.nodes_audio  # common extra
-    print("ComfyUI core imports OK")
+  import comfy
+  import comfy_extras.nodes_audio  # common extra
+  print("ComfyUI core imports OK")
 except Exception as e:
-    print("[SANITY] Core import error:", e)
+  print("[SANITY] Core import error:", e)
 PY
 }
 
