@@ -78,6 +78,8 @@ NODES=(
   https://github.com/hay86/ComfyUI_LatentSync
   https://github.com/pamparamm/sd-perturbed-attention
   https://github.com/WASasquatch/was-node-suite-comfyui
+  https://github.com/PGCRT/CRT-Nodes
+  https://github.com/crystian/ComfyUI-Crystools
 )
 
 CHECKPOINT_MODELS=(
