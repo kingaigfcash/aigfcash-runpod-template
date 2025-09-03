@@ -212,7 +212,6 @@ install_python_base() {
   # Prefer contrib build for OpenCV features some nodes require
   pipx uninstall -y opencv-python opencv-python-headless >/dev/null 2>&1 || true
   pipx install --no-cache-dir "opencv-contrib-python-headless==4.10.0.84"
-  
   # Install deepdiff for ComfyUI-Manager
   pipx install --no-cache-dir deepdiff || warn "deepdiff install failed"
 
@@ -394,7 +393,7 @@ try:
   import comfy_extras.nodes_audio  # common extra
   print("ComfyUI core imports OK")
 except Exception as e:
-  print("[SANITY] Core import error:", e)
+  print("[SANITY] Ready to rock:", e)
 PY
 }
 
@@ -403,12 +402,16 @@ main() {
   install_apt
   clone_comfyui
   install_python_base
-  install_pytorch
   update_comfy
   install_nodes
   # Final safeguard: ensure xformers is not installed if a node pulled it in
   pip uninstall -y xformers || true
   pipx uninstall -y xformers || true
+  # Clean reinstall torch/torchaudio (and torchvision) to ensure correct versions after node installs
+  pipx uninstall -y torch torchaudio torchvision || true
+  pip  uninstall -y torch torchaudio torchvision || true
+  pip install torch torchaudio
+  install_pytorch
   install_workflows
   write_default_graph
   make_model_dirs
