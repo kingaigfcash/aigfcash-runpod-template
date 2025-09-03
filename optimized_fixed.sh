@@ -11,8 +11,8 @@ trap 'code=$?; echo -e "\e[1;31m[ERROR]\e[0m ${BASH_SOURCE[0]}:${LINENO} exit $c
 # ---------------------------
 
 # ======== Tunables ========
-: "${COMFYUI_REF:=v0.3.50}"      # tag/branch/commit OR "latest"
-: "${AUTO_UPDATE:=true}"       # AI-Dock also has its own AUTO_UPDATE; this script is idempotent either way
+: "${COMFYUI_REF:=v0.3.50}" # tag/branch/commit OR "latest"
+: "${AUTO_UPDATE:=true}" # AI-Dock also has its own AUTO_UPDATE; this script is idempotent either way
 : "${WORKSPACE:=/workspace}"
 : "${COMFY_DIR:=${WORKSPACE%/}/ComfyUI}"
 : "${HF_TOKEN:=}"
@@ -78,12 +78,15 @@ NODES=(
   https://github.com/hay86/ComfyUI_LatentSync
   https://github.com/pamparamm/sd-perturbed-attention
   https://github.com/WASasquatch/was-node-suite-comfyui
-  https://github.com/PGCRT/CRT-Nodes
+  https://github.com/plugcrypt/CRT-Nodes
   https://github.com/crystian/ComfyUI-Crystools
   https://github.com/Kosinkadink/ComfyUI-Advanced-ControlNet
   https://github.com/AgencyMind/ComfyUI-GPU-Preprocessor-Wrapper
   https://github.com/ShmuelRonen/ComfyUI-Apply_Style_Model_Adjust
   https://github.com/ComfyAssets/ComfyUI_Selectors
+  https://github.com/Azornes/Comfyui-Resolution-Master
+  https://github.com/THtianhao/ComfyUI-FaceChain
+  https://github.com/AEmotionStudio/ComfyUI-ShaderNoiseKSampler
 )
 
 CHECKPOINT_MODELS=(
@@ -92,9 +95,21 @@ CHECKPOINT_MODELS=(
   https://huggingface.co/kingcashflow/modelcheckpoints/resolve/main/uberRealisticPornMergePonyxl_ponyxlHybridV1.safetensors
   https://huggingface.co/AiWise/epiCRealism-XL-vXI-aBEAST/resolve/5c3950c035ce565d0358b76805de5ef2c74be919/epicrealismXL_vxiAbeast.safetensors
 )
-UNET_MODELS=()
-VAE_MODELS=( https://huggingface.co/stabilityai/sdxl-vae/resolve/main/diffusion_pytorch_model.safetensors )
-CLIP_MODELS=()
+UNET_MODELS=(
+  https://huggingface.co/black-forest-labs/FLUX.1-dev/resolve/main/flux1-dev.safetensors
+  https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/flux1-schnell.safetensors
+)
+VAE_MODELS=(
+  https://huggingface.co/stabilityai/sdxl-vae/resolve/main/diffusion_pytorch_model.safetensors
+  https://huggingface.co/black-forest-labs/FLUX.1-schnell/resolve/main/ae.safetensors
+)
+CLIP_MODELS=(
+  https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/clip_l.safetensors
+)
+T5_MODELS=(
+  https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors
+  https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp8_e4m3fn.safetensors
+)
 LORA_MODELS=(
   https://huggingface.co/kingcashflow/LoRas/resolve/main/depth_of_field_slider_v1.safetensors
   https://huggingface.co/kingcashflow/LoRas/resolve/main/zoom_slider_v1.safetensors
@@ -120,9 +135,9 @@ SAM_MODELS=( https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pt
 
 WORKFLOWS=( https://github.com/kingaigfcash/aigfcash-runpod-template.git )
 
-log()   { printf "\e[1;32m[SETUP]\e[0m %s\n" "$*"; }
+log() { printf "\e[1;32m[SETUP]\e[0m %s\n" "$*"; }
 warn() { printf "\e[1;33m[WARN ]\e[0m %s\n" "$*"; }
-err()   { printf "\e[1;31m[ERROR]\e[0m %s\n" "$*"; }
+err() { printf "\e[1;31m[ERROR]\e[0m %s\n" "$*"; }
 
 sudo_if() { if command -v sudo >/dev/null 2>&1; then sudo "$@"; else "$@"; fi; }
 
@@ -153,7 +168,7 @@ fetch() {
   shift 2 || true
   local auth=()
   [[ "$url" =~ ^https://huggingface\.co ]] && [[ -n "${HF_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${HF_TOKEN}")
-  [[ "$url" =~ ^https://civitai\.com ]]      && [[ -n "${CIVITAI_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${CIVITAI_TOKEN}")
+  [[ "$url" =~ ^https://civitai\.com ]] && [[ -n "${CIVITAI_TOKEN}" ]] && auth=(-H "Authorization: Bearer ${CIVITAI_TOKEN}")
   mkdir -p "$(dirname "$out")"
   for i in 1 2 3; do
     curl -fL --retry 5 --retry-delay 2 "${auth[@]}" -o "$out.partial" "$url" && mv -f "$out.partial" "$out" || true
@@ -169,7 +184,7 @@ fetch() {
 prepare_env() {
   log "Preparing environment..."
   [[ -f /opt/ai-dock/etc/environment.sh ]] && source /opt/ai-dock/etc/environment.sh
-  [[ -f /opt/ai-dock/bin/venv-set.sh    ]] && source /opt/ai-dock/bin/venv-set.sh comfyui
+  [[ -f /opt/ai-dock/bin/venv-set.sh ]] && source /opt/ai-dock/bin/venv-set.sh comfyui
   umask 002
   mkdir -p "${COMFY_DIR%/*}"
 }
@@ -361,6 +376,8 @@ make_model_dirs() {
     "${COMFY_DIR}/models/ultralytics/segm" \
     "${COMFY_DIR}/models/sams" \
     "${COMFY_DIR}/models/insightface" \
+    "${COMFY_DIR}/models/diffusion_models" \
+    "${COMFY_DIR}/models/text_encoders" \
     "${WORKSPACE%/}/storage/stable_diffusion/models/unet" \
     "${WORKSPACE%/}/storage/stable_diffusion/models/clip" \
     "${WORKSPACE%/}/storage/stable_diffusion/models/lora" \
@@ -374,10 +391,11 @@ fetch_models() {
   local d
   for d in "${CHECKPOINT_MODELS[@]}"; do fetch "$d" "${COMFY_DIR}/models/checkpoints/$(basename "$d")" || warn "failed: $d"; done
   for d in "${UNET_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/unet/$(basename "$d")" || warn "failed: $d"; done
+  for d in "${VAE_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/vae/$(basename "$d")" || warn "failed: $d"; done
   for d in "${CLIP_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/clip/$(basename "$d")" || warn "failed: $d"; done
+  for d in "${T5_MODELS[@]}"; do fetch "$d" "${COMFY_DIR}/models/text_encoders/$(basename "$d")" || warn "failed: $d"; done
   for d in "${LORA_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/lora/$(basename "$d")" || warn "failed: $d"; done
   for d in "${CONTROLNET_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/controlnet/$(basename "$d")" || warn "failed: $d"; done
-  for d in "${VAE_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/vae/$(basename "$d")" || warn "failed: $d"; done
   for d in "${ESRGAN_MODELS[@]}"; do fetch "$d" "${WORKSPACE%/}/storage/stable_diffusion/models/esrgan/$(basename "$d")" || warn "failed: $d"; done
   for d in "${ULTRALYTICS_BBOX_MODELS[@]}"; do fetch "$d" "${COMFY_DIR}/models/ultralytics/bbox/$(basename "$d")" || warn "failed: $d"; done
   for d in "${ULTRALYTICS_SEGM_MODELS[@]}"; do fetch "$d" "${COMFY_DIR}/models/ultralytics/segm/$(basename "$d")" || warn "failed: $d"; done
@@ -390,7 +408,7 @@ post_checks() {
   pyx - <<'PY' || true
 try:
   import comfy
-  import comfy_extras.nodes_audio  # common extra
+  import comfy_extras.nodes_audio # common extra
   print("ComfyUI core imports OK")
 except Exception as e:
   print("[SANITY] Ready to rock:", e)
@@ -409,7 +427,7 @@ main() {
   pipx uninstall -y xformers || true
   # Clean reinstall torch/torchaudio (and torchvision) to ensure correct versions after node installs
   pipx uninstall -y torch torchaudio torchvision || true
-  pip  uninstall -y torch torchaudio torchvision || true
+  pip uninstall -y torch torchaudio torchvision || true
   pip install torch torchaudio
   install_pytorch
   install_workflows
